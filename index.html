@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Municípios Limítrofes do Brasil</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@9.0.1/public/assets/styles/choices.min.css"/>
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,9 +16,8 @@
     <main>
         <div class="container">
             <label for="municipio-select">Selecione um Município:</label>
-            <select id="municipio-select">
-                <option value="">Carregando dados...</option>
-            </select>
+            
+            <select id="municipio-select"></select>
             
             <div id="resultado-container">
                 <h2>Municípios Limítrofes:</h2>
@@ -25,6 +27,9 @@
             </div>
         </div>
     </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/choices.js@9.0.1/public/assets/scripts/choices.min.js"></script>
+    
     <script src="script.js"></script>
 </body>
 </html>
