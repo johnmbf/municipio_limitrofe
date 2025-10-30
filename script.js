@@ -1,7 +1,7 @@
 // --- IMPORTANTE ---
 // Substitua esta URL pela URL "Raw" do seu arquivo CSV no GitHub.
 // Veja o Passo 3 nas instruções de hospedagem.
-const dataUrl = 'URL_DO_SEU_ARQUIVO_CSV_RAW_AQUI';
+const dataUrl = 'https://raw.githubusercontent.com/johnmbf/municipio_limitrofe/refs/heads/main/municipios_limitrofes.csv';
 
 // Variáveis globais para armazenar os dados e os índices das colunas
 let dadosCompletos = [];
