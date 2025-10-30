@@ -1,23 +1,34 @@
-// --- IMPORTANTE ---
-// Substitua esta URL pela URL "Raw" do seu arquivo CSV no GitHub.
-// Veja o Passo 3 nas instruções de hospedagem.
+// URL "Raw" do seu arquivo CSV no GitHub (corrigida)
 const dataUrl = 'https://raw.githubusercontent.com/johnmbf/municipio_limitrofe/main/municipios_limitrofes.csv';
 
-// Variáveis globais para armazenar os dados e os índices das colunas
+// Variáveis globais
 let dadosCompletos = [];
 let indiceNmMun = -1;
 let indiceNmLim = -1;
+let choices; // Variável para armazenar a instância do Choices.js
 
-// Aguarda o carregamento completo do DOM antes de executar o script
+/**
+ * Aguarda o carregamento do DOM para iniciar a aplicação
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    iniciarAplicacao();
+    // 1. Inicializa o Choices.js imediatamente
+    const select = document.getElementById('municipio-select');
+    choices = new Choices(select, {
+        placeholderValue: 'Carregando dados...', // Texto enquanto o CSV é baixado
+        searchEnabled: true,
+        removeItemButton: false, // Não é um campo de multi-seleção
+        itemSelectText: 'Pressione para selecionar', // Texto de acessibilidade
+        searchPlaceholderValue: 'Digite para pesquisar...', // Texto no campo de busca
+    });
+
+    // 2. Inicia o carregamento dos dados
+    iniciarAplicacao(select);
 });
 
 /**
- * Função principal que inicia o carregamento e processamento dos dados.
+ * Função principal que carrega e processa os dados.
  */
-async function iniciarAplicacao() {
-    const select = document.getElementById('municipio-select');
+async function iniciarAplicacao(selectElement) {
     try {
         const response = await fetch(dataUrl);
         if (!response.ok) {
@@ -25,33 +36,35 @@ async function iniciarAplicacao() {
         }
         const csvText = await response.text();
         
+        // 3. Processa o CSV
         processarCSV(csvText);
-        popularDropdown(select);
         
-        // Adiciona o "ouvinte" de evento para quando o usuário mudar a seleção
-        select.addEventListener('change', (event) => {
+        // 4. Popula o dropdown do Choices.js com os dados processados
+        popularDropdown(choices);
+        
+        // 5. Adiciona o "ouvinte" de evento para quando o usuário mudar a seleção
+        selectElement.addEventListener('change', (event) => {
             exibirLimites(event.target.value);
         });
 
-    } catch (error) {
+    } catch (error)
+ {
         console.error('Falha ao carregar ou processar os dados:', error);
-        select.innerHTML = '<option value="">Erro ao carregar dados</option>';
+        // Informa o erro ao usuário através do Choices.js
+        choices.setChoices([
+            { value: '', label: 'Erro ao carregar dados', disabled: true }
+        ], 'value', 'label', true);
     }
 }
 
 /**
- * Processa o texto bruto do CSV e o transforma em um array de objetos.
+ * Processa o texto bruto do CSV (Função sem alteração)
  */
 function processarCSV(text) {
-    // Divide o texto em linhas, tratando quebras de linha Windows (\r\n) e Unix (\n)
     const linhas = text.split(/\r?\n/);
-    
     if (linhas.length === 0) return;
 
-    // Pega a primeira linha como cabeçalho
     const cabecalho = linhas[0].split(',');
-
-    // Encontra os índices das colunas que nos interessam
     indiceNmMun = cabecalho.indexOf('NM_MUN');
     indiceNmLim = cabecalho.indexOf('NM_LIM');
 
@@ -60,14 +73,9 @@ function processarCSV(text) {
         return;
     }
 
-    // Processa o restante das linhas
-    // Começa do 1 para pular o cabeçalho
     for (let i = 1; i < linhas.length; i++) {
-        if (linhas[i].trim() === '') continue; // Pula linhas vazias
-        
+        if (linhas[i].trim() === '') continue; 
         const colunas = linhas[i].split(',');
-        
-        // Adiciona apenas os dados necessários para otimizar a memória
         dadosCompletos.push({
             municipio: colunas[indiceNmMun],
             limite: colunas[indiceNmLim]
@@ -76,45 +84,42 @@ function processarCSV(text) {
 }
 
 /**
- * Popula o menu suspenso (dropdown) com a lista única de municípios.
+ * Popula o menu suspenso (dropdown) usando a API do Choices.js
  */
-function popularDropdown(selectElement) {
-    // Extrai todos os nomes de municípios (NM_MUN)
+function popularDropdown(choicesInstance) {
+    // Extrai nomes de municípios e cria lista única
     const nomesMunicipios = dadosCompletos.map(item => item.municipio);
-    
-    // Cria um Set para obter valores únicos e converte de volta para Array
     const municipiosUnicos = [...new Set(nomesMunicipios)];
     
     // Ordena alfabeticamente
     municipiosUnicos.sort((a, b) => a.localeCompare(b));
 
-    // Limpa o "Carregando..."
-    selectElement.innerHTML = ''; 
+    // Converte o array de strings para o formato de objeto que o Choices.js espera
+    // ex: [{ value: 'Pelotas', label: 'Pelotas' }, ...]
+    const choicesData = municipiosUnicos
+        .filter(municipio => municipio) // Garante que não há valores nulos/vazios
+        .map(municipio => ({
+            value: municipio,
+            label: municipio
+        }));
     
-    // Adiciona a opção padrão
-    const optionPadrao = document.createElement('option');
-    optionPadrao.value = '';
-    optionPadrao.textContent = 'Selecione...';
-    selectElement.appendChild(optionPadrao);
-
-    // Adiciona cada município como uma <option>
-    municipiosUnicos.forEach(municipio => {
-        if (municipio) { // Garante que não está adicionando valores vazios
-            const option = document.createElement('option');
-            option.value = municipio;
-            option.textContent = municipio;
-            selectElement.appendChild(option);
-        }
+    // Adiciona a opção "Selecione..." no início da lista
+    choicesData.unshift({
+        value: '',
+        label: 'Selecione...',
+        selected: true,
+        placeholder: true
     });
+
+    // 4. Usa a API do Choices.js para definir a lista de opções de uma só vez
+    choicesInstance.setChoices(choicesData, 'value', 'label', true);
 }
 
 /**
- * Filtra os dados e exibe os municípios limítrofes para o município selecionado.
+ * Exibe os municípios limítrofes (Função sem alteração)
  */
 function exibirLimites(municipioSelecionado) {
     const listaUl = document.getElementById('lista-limites');
-    
-    // Limpa a lista anterior
     listaUl.innerHTML = '';
 
     if (!municipioSelecionado) {
@@ -122,16 +127,12 @@ function exibirLimites(municipioSelecionado) {
         return;
     }
 
-    // Filtra o array de dados completo procurando pelo município selecionado
     const municipiosLimites = dadosCompletos
         .filter(item => item.municipio === municipioSelecionado)
-        .map(item => item.limite); // Extrai apenas o nome do município limítrofe
+        .map(item => item.limite);
 
     if (municipiosLimites.length > 0) {
-        // Ordena os limítrofes alfabeticamente
         municipiosLimites.sort((a, b) => a.localeCompare(b));
-
-        // Adiciona cada limite como um item de lista
         municipiosLimites.forEach(limite => {
             const li = document.createElement('li');
             li.textContent = limite;
